@@ -1,0 +1,146 @@
+
+
+#lsb_release -a
+LSB Version:    :core-4.0-ia32:core-4.0-noarch:graphics-4.0-ia32:graphics-4.0-noarch:printing-4.0-ia32:printing-4.0-noarch
+Distributor ID: RedHatEnterpriseServer
+Description:    Red Hat Enterprise Linux Server release 6.3 (Santiago)
+Release:        6.3
+Codename:       Santiago
+
+
+#uname -r
+2.6.32-279.el6.i686
+
+# lspci | grep Net*
+04:00.0 Network controller: Broadcom Corporation BCM4312 802.11b/g LP-PHY (rev 01)
+06:00.0 Ethernet controller: Broadcom Corporation NetLink BCM5906M Fast Ethernet PCI Express (rev 02)
+
+对于BCM4312有两种安装方式:
+1.Broadcom提供的无线驱动wl
+官方网址是:http://www.broadcom.com/support/802.11/linux_sta.php，通过查看README.txt安装.
+参考链接:http://my.oschina.net/crazypenguin/blog/64240
+参考链接:http://lug.ustc.edu.cn/sites/opensuse-guide/wlan.php
+
+2.Linux开源社区提供的B43
+官方网址是:http://wireless.kernel.org/en/users/Drivers/b43?action=show&redirect=en%2Fusers%2FDrivers%2Fbcm43x
+参考链接:http://linuxforums.org.uk/index.php?topic=5842.0
+
+我是用第二种方法安装,没有网络的可以通过配置本地Yum源来安装一些基本依赖软件,通过U盘拷贝下载的软件.
+/etc/yum.repos.d/  打开一个repo后缀的仓库,修改baseurl=file://挂载点      
+挂载点是ISO镜像的挂载目录,如果挂载在/mnt/cdrom下，baseurl=file:///mnt/cdrom
+
+第一步:
+http://bues.ch/b43/fwcutter/b43-fwcutter-017.tar.bz2 下载b43-fwcutter-017.tar.bz2
+#tar jxvf b43-fwcutter-017.tar.bz2
+#cd b43-fwcutter-017
+#make && make install
+
+第二步:
+http://mirror2.openwrt.org/sources/broadcom-wl-5.10.56.27.3_mipsel.tar.bz2下载broadcom-wl-5.10.56.27.3_mipsel.tar.bz2
+#tar jxvf broadcom-wl-5.10.56.27.3_mipsel.tar.bz2
+#b43-fwcutter -w /lib/firmware broadcom-wl-5.10.56.27.3/driver/wl_apsta/wl_prebuilt.o
+
+第三步:
+http://downloads.openwrt.org/sources/wl_apsta-3.130.20.0.o下载wl_apsta-3.130.20.0.o
+#b43-fwcutter -w /lib/firmware wl_apsta-3.130.20.0.o
+
+第四步:
+#modprobe b43
+#iwconfig wlan0 up
+#route add default gw 192.168.1.1
+这个时候我的无线灯亮了.
+如果没有亮
+There are several other drivers (besides this one) that can drive
+Broadcom 802.11 chips such as b43, bcma and ssb. They will conflict with
+this driver and need to be uninstalled before this driver can be installed.
+Any previous revisions of the wl driver also need to be removed.
+这个是Broadcom WL官方文档中一段话，B43,BCMA,SSB,WL可能相互有冲突.
+可以试试阻止这几个bcma,wl,ssb
+#echo "blacklist 驱动名称" >> /etc/modprobe.d/blacklist
+
+
+第五步：
+#iwlist wlan0 scannig 产生类似的接入点
+Cell 01 - Address: 1C:FA:68:BF:A4:DA
+  Channel:1
+  Frequency:2.412 GHz (Channel 1)
+  Quality=23/70  Signal level=-87 dBm
+  Encryption key:on
+  ESSID:"Super man"
+  Bit Rates:1 Mb/s; 2 Mb/s; 5.5 Mb/s; 11 Mb/s; 6 Mb/s
+      9 Mb/s; 12 Mb/s; 18 Mb/s
+  Bit Rates:24 Mb/s; 36 Mb/s; 48 Mb/s; 54 Mb/s
+  Mode:Master
+  Extra:tsf=00000003c6bad180
+  Extra: Last beacon: 268ms ago
+  IE: Unknown: 00095375706572206D616E
+  IE: Unknown: 010882848B960C121824
+  IE: Unknown: 030101
+  IE: Unknown: 050400010000
+  IE: Unknown: 0706555320010D14
+  IE: Unknown: 200100
+  IE: Unknown: 2A0100
+  IE: IEEE 802.11i/WPA2 Version 1
+   Group Cipher : CCMP
+   Pairwise Ciphers (1) : CCMP
+   Authentication Suites (1) : PSK
+  IE: Unknown: 32043048606C
+  IE: Unknown: 2D1A6E1003FFFF000000000000000000000000000000000000000000
+  IE: Unknown: 3D1601051100000000000000000000000000000000000000
+  IE: WPA Version 1
+   Group Cipher : CCMP
+   Pairwise Ciphers (1) : CCMP
+   Authentication Suites (1) : PSK
+  IE: Unknown: DD180050F2020101030003A4000027A4000042435E0062322F00
+  IE: Unknown: DD0900037F01010000FF7F
+  IE: Unknown: DD0E0050F204104A0001101044000102
+主要关心ESSID:"Super man",这个是接入点.Super man就是一个接入点.
+#iwlist wlan0 essid "Super man" keys s:"密码"
+不过这个iwlist支持WEP ,不支持WPA1和WPA2.输入密码的时候会报错.
+
+第六步:安装wpa_supplicant
+官方文档:http://w1.fi/wpa_supplicant/
+下载地址:http://pkgs.org/centos-6-rhel-6/centos-rhel-i386/wpa_supplicant-0.7.3-4.el6_3.i686.rpm/download/
+
+可以通过本地Yum安装
+#yum install wpa_su*
+# rpm -qa | grep wpa*
+wpa_supplicant-0.7.3-3.el6.i686
+
+
+第七步:配置
+官方文档:http://hostap.epitest.fi/gitweb/gitweb.cgi?p=hostap.git;a=blob_plain;f=wpa_supplicant/wpa_supplicant.conf
+参考链接:http://muyun107.blog.163.com/blog/static/6957547020112833940880/
+参考链接:http://wiki.centos.org/HowTos/Laptops/WpaSupplicant
+
+#vim /etc/wpa_supplicant/wpa_supplicant.conf
+在配置文件中添加
+ctrl_interface_group=0
+ap_scan=1
+network={
+ ssid="接入点"
+ proto=WPA2
+ key_mgmt=WPA-PSK
+ pairwise=CCMP TKIP
+ group=CCMP TKIP WEP104 WEP40
+ psk=“密码'
+ priority=2
+}
+需要填入接入点和登录的密码.
+
+# vim /etc/sysconfig/wpa_supplicant
+INTERFACES="-iwlan0" ；配置设备接口（Interface） wlan0
+DRIVERS="-Dwext"  ；配置驱动(Driver) (Wireless Extensions)
+OTHER_ARGS="-f /var/log/wpa_supplicant.log -P /var/run/wpa_supplicant.pid"
+
+第八步:
+chkconfig wpa_supplicant on
+dhclient wlan0 ;动态获取Ip地址
+测试:
+# ping www.baidu.com
+PING www.a.shifen.com (119.75.218.77) 56(84) bytes of data.
+64 bytes from 119.75.218.77: icmp_seq=1 ttl=57 time=28.1 ms
+64 bytes from 119.75.218.77: icmp_seq=2 ttl=57 time=35.6 ms
+64 bytes from 119.75.218.77: icmp_seq=3 ttl=57 time=28.9 ms
+64 bytes from 119.75.218.77: icmp_seq=4 ttl=57 time=34.8 ms
+
