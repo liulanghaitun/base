@@ -1,0 +1,123 @@
+gcc安装的官方文档为：http://gcc.gnu.org/install/
+
+我使用的Linux版本是Centos 6.3
+[renwei@localhost ~]$ uname -a
+Linux localhost.localdomain 2.6.32-279.el6.i686 #1 SMP Fri Jun 22 10:59:55 UTC 2012 i686 i686 i386 GNU/Linux
+  
+第一步：在主目录下新建gcc目录作为安装目录
+cd ~
+mkdir gcc
+
+第二步:设置环境变量
+export BASE='\home\renwe\gcc'
+export CPPFLAGS='-fexceptions'
+上述的BASE目录是gcc的安装目录
+
+第三步:http://gmplib.org/下载gmp-5.0.5.tar.bz2到gcc目录
+tar -jxvf gmp-5.1.1.tar.bz2 生成gmp-5.0.5
+mkdir gmp-build
+cd gmp-5.0.5
+./configure --prefix=$BASE/gmp-build --enable-cxx
+make && make install
+由于这个带有--enable-cxx,这个会调用g++,如果没有安装g++,可以使用root 权限，yum install gcc-c++安装g++
+
+第四步:http://www.mpfr.org/mpfr-current/#download下载mpfr-3.1.2.tar.bz2到gcc目录
+tar -jxvf mpfr-3.1.2.tar.bz2 生成mpfr-3.1.2
+mkdir mpfr-build
+cd mpfr-3.1.2
+./configure --prefix=$BASE/mpfr-build --with-gmp=$BASE/gmp-build
+make && make install
+
+第五步:http://www.multiprecision.org/index.php?prog=mpc&page=download下载mpc-1.0.1.tar.gz到gcc目录
+tar -zxvf mpc-1.0.1.tar.gz 生成mpc-1.0.1
+mkdir mpc-build
+cd mpc-1.0.1
+./configure --prefix=$BASE/mpc-build --with-gmp=$BASE/gmp-build --with-mpfr=$BASE/mpfr-build
+make && make install
+
+第六步:http://bugseng.com/external/ppl/download/ftp/releases/0.12/ ppl下载ppl-0.12.tar.gz到gcc目录
+tar -zxvf ppl-0.12.tar.gz 生成ppl-0.12
+mkdir ppl-build
+cd ppl-0.12
+./configure --prefix=$BASE/ppl-build --with-gmp=$BASE/gmp-build
+make && make install
+
+第七步:ftp://gcc.gnu.org/pub/gcc/infrastructure/下载cloog-0.18.0.tar.gz到gcc目录
+tar -zxvf cloog-0.18.0.tar.gz 生成cloog-0.18
+mkdir cloog-build
+cd cloog-0.18
+./configure --prefix=$BASE/cloog-build --with-gmp-prefix=$BASE/gmp-build
+make && make install
+
+第八步:http://gcc.parentingamerica.com/releases/gcc-4.8.0/下载gcc-4.8.0.tar.bz2到gcc目录
+tar -jxvf gcc-4.8.0.tar.bz2 生成文件 gcc-4.8.0
+mkdir gcc-build
+cd gcc-4.8.0
+export LD_LABRARY_PATH=$LD_LABRARY_PATH:/usr/lib:$BASE/gmp-build/lib:$BASE/mpfr-build/lib:$BASE/mpc-build/lib:$BASE/ppl-build/lib:$BASE/cloog-build/lib
+
+./configure
+--prefix=$BASE/gcc-build  
+--with-gmp=$BASE/gmp-build
+--with-mpfr=$BASE/mpfr-build
+--with-mpc=$BASE/mpc-build
+--with-ppl=$BASE/ppl-build
+--with-cloog=$BASE/cloog-build
+--with-pkgversion="GCC Version 4.8.0 2013/04/14"
+--with-bugurl=http://bugzilla.redhat.com/bugzilla 
+--program-suffix=-4.8
+--disable-bootstrap 
+--enable-threads=posix
+--enable-checking=release
+--enable-cloog-backend=isl
+--with-system-zlib
+--enable-__cxa_atexit
+--disable-libunwind-exceptions
+--enable-languages=c,c++
+--enable-clocale=gnu
+--enable-shared 
+--with-cpu=generic
+--with-tune=generic
+--with-arch=i686
+--build=i686-redhat-linux
+
+make && make install
+由于这个带有--with-system-zlib，需要安装zlib,可以使用root 权限, yum install zlib
+带这个后--program-suffix=-4.8，这个是生成的gcc-4.8,去掉之后生成的是gcc，推荐使用gcc-4.8，这样可以使用两个版本的gcc
+
+编译后的结果：
+[renwei@localhost bin]$ ls
+c++-4.8     gcc-nm-4.8                 i686-redhat-linux-gcc-4.8
+cpp-4.8     gcc-ranlib-4.8             i686-redhat-linux-gcc-4.8.0
+g++-4.8     gcov-4.8                   i686-redhat-linux-gcc-ar-4.8
+gcc-4.8     i686-redhat-linux-c++-4.8  i686-redhat-linux-gcc-nm-4.8
+gcc-ar-4.8  i686-redhat-linux-g++-4.8  i686-redhat-linux-gcc-ranlib-4.8
+[renwei@localhost bin]$ ./gcc-4.8 -v
+Using built-in specs.
+COLLECT_GCC=./gcc-4.8
+COLLECT_LTO_WRAPPER=/home/renwei/gcc/gcc-build/libexec/gcc/i686-redhat-linux/4.8.0/lto-wrapper
+Target: i686-redhat-linux
+Configured with: ./configure --prefix=/home/renwei/gcc/gcc-build --with-gmp=/home/renwei/gcc/gmp-build --with-mpfr=/home/renwei/gcc/mpfr-build --with-mpc=/home/renwei/gcc/mpc-build --with-ppl=/home/renwei/gcc/ppl-build --with-cloog=/home/renwei/gcc/cloog-build --with-pkgversion='GCC Version 4.8.0 2013/04/14' --with-bugurl=http://bugzilla.redhat.com/bugzilla --program-suffix=-4.8 --disable-bootstrap --enable-threads=posix --enable-checking=release --enable-cloog-backend=isl --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-languages=c,c++ --enable-clocale=gnu --enable-shared --with-cpu=generic --with-tune=generic --with-arch=i686 --build=i686-redhat-linux
+Thread model: posix
+gcc version 4.8.0 (GCC Version 4.8.0 2013/04/14)
+
+第九步:更改环境变量
+cd ~
+vim .bashrc
+将gcc-build下的bin和lib加入到搜索路径下
+PATH=$PATH:/home/renwei/gcc-build/bin
+LD_LIBRARY_PATH=/home/renwei/gcc-build/lib:$LD_LIBRARY_PATH
+export PATH
+export LD_LIBRARY_PATH
+
+执行source .bashrc,使更改生效
+
+第十步:测试该版本
+[renwei@localhost src]$ vim hello.c
+[renwei@localhost src]$ gcc-4.8 -o hello hello.c
+[renwei@localhost src]$ ./hello
+result=gcc test!
+[renwei@localhost src]$ rm -rf hello
+[renwei@localhost src]$ vim hello.cpp
+[renwei@localhost src]$ g++-4.8 -o hello hello.cpp
+[renwei@localhost src]$ ./hello
+cpp test 
