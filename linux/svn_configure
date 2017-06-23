@@ -1,0 +1,151 @@
+ 服务器环境:
+ # lsb_release -a
+ LSB Version:    :core-4.0-ia32:core-4.0-noarch:graphics-4.0-ia32:graphics-4.0-noarch:printing-4.0-ia32:printing-4.0-noarch
+ Distributor ID: RedHatEnterpriseServer
+ Description:    Red Hat Enterprise Linux Server release 6.3 (Santiago)
+ Release:        6.3
+ Codename:       Santiago
+ # uname -r
+ 2.6.32-279.el6.i686
+
+第一步：svn安装
+# yum install subversion -y
+ # svnserve --version
+ svnserve，版本 1.6.11 (r934486)
+    编译于 Apr 11 2013，17:28:04
+   
+
+第二步:配置svn://访问
+设置svn主目录,我的svn主目录是/home/svn
+创建svn账号和组
+#adduser svn管理员
+#addgroup svn组
+#mkdir -p svn主目录
+#chmod -R 770 svn主目录
+#chown -R svn管理员:svn组 svn主目录
+#svnadmin create svn主目录/svn工程目录
+ ====配置版本库
+# ls
+ conf  db  format  hooks  locks  README.txt
+进入conf目录,可以看到三个文件
+# ls
+ authz  passwd  svnserve.conf
+ ====配置svnserve.conf
+#vim svnserve.conf
+去掉#anon-access = read,#auth-access = write,#password-db = passwd,#authz-db = authz之前的#(不能留有空格).
+修改anon-access = none (匿名用户不允许访问)
+ ====添加用户
+#adduser username -g svn组
+#passwd username
+====配置passwd(svn用户和密码)
+#vim passwd
+在[users]下添加用户
+username=password (username和password自己指定)
+ ====配置authz(svn用户权限)
+ #vim authz
+在[groups]下添加组员
+group=user1,user2 (group自己指定,user1由users下指定)
+ ====设置文件访问权限
+group是取自groups,是自定义的
+[/]
+ @group=rw  
+ *=
+
+[svn主目录/svn工程目录/trunk]
+ @group=rw
+ *=
+
+[svn主目录/svn工程目录/branches]
+ @group=rw
+ *=
+
+[svn主目录/svn工程目录/tags]
+ @group=r
+ *=
+ ====启动服务
+#svnserve -d -r svn主目录
+#ps -aux |grep svnserve
+关闭防火墙
+#service iptables stop
+====导入工程文件
+构建trunk,branches,tags
+#svn mkdir svn://svn服务器地址/svn工程目录/trunk -m "create trunk"
+#svn mkdir svn://svn服务器地址/svn工程目录/branches -m "create branches"
+#svn mkdir svn://svn服务器地址/svn工程目录/tags -m "create tags"
+#svn import 工程目录 file://svn主目录/svn工程目录/trunk -m "create project"
+ ====访问svn工程
+svn://svn服务器地址/svn工程目录/trunk
+
+第三步:配置http://访问
+====安装svn插件
+#yum install mod_dav_svn -y
+ ====安装apache
+ #yum install httpd -y
+ #cd /etc/httpd/ && ls
+ conf  conf.d  logs  modules  run
+ ====修改apache配置文件
+#vim /etc/httpd/conf/httpd.conf
+修改Listen为 服务器地址:80
+修改User为 svn管理员
+ 修改Group为 svn组
+ 修改ServerName为 服务器地址:80
+添加模块
+LoadModule dav_svn_module modules/mod_dav_svn.so
+ LoadModule authz_svn_module modules/mod_authz_svn.so
+ ====创建http访问密码
+#htpasswd -mc http密码文件 username
+添加用户
+#htpasswd http密码文件 username
+ ====添加http访问路径
+#vim /etc/httpd/conf.d/subversion.conf
+添加http访问路径:
+ <Location /svn>
+    DAV svn
+    SVNParentPath svn主目录
+   SVNListParentPath on
+
+   # Limit write permission to list of valid users.
+    #<LimitExcept GET PROPFIND OPTIONS REPORT>
+       # Require SSL connection for password protection.
+       # SSLRequireSSL
+
+      AuthType Basic
+       AuthName "Authorization Realm"
+       AuthUserFile http密码文件路径
+      AuthzSVNAccessFile svn工程目录/conf/authz
+       Require valid-user
+    #</LimitExcept>
+ </Location>
+ ====启动服务
+#service httpd start
+ ====访问svn版本
+http://svn服务器地址/svn/svn工程目录/trunk
+
+第四步:配置https://访问
+====安装svn插件
+#yum install mod_ssl -y
+ #yum install openssh -y
+ #vim /etc/httpd/conf/httpd.conf
+ ===添加模块
+LoadModule ssl_module modules/mod_ssl.so
+ ===重启服务
+#service httpd restart
+ ===访问svn版本
+https://svn服务器地址/svn/svn工程目录/trunk
+需要鉴权信息，系统自带有key.
+
+
+
+第五步:配置svn+ssh://访问
+====下载putty
+下载路径:http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html下putty-0.62-installer.exe
+ ====生成秘钥
+#su svn管理员
+$ssh-keygen -b 1024 -t rsa
+在svn管理员目录中生成id_rsa和 id_rsa.pub文件
+$cat /home/svn管理员/.ssh/id_rsa.pub >> /home/svn管理员/.ssh/authorized_keys
+ =====拷贝id_rsa到windows工程环境(可以通过samba实现)
+ =====调用puttygen工具==>load private key(id_rsa)==>Save private key
+ =====调用putty目录下的pageant工具==>add key==>添加之前保存的private key
+ =====访问svn版本
+svn+ssh://svn管理员@svn服务器地址/svn主目录/svn工程目录/trunk 
