@@ -1,0 +1,93 @@
+ samba主要用于Windows与Linux之间的共享.
+
+ # lsb_release -a
+ LSB Version:    :core-4.0-ia32:core-4.0-noarch:graphics-4.0-ia32:graphics-4.0-noarch:printing-4.0-ia32:printing-4.0-noarch
+ Distributor ID: RedHatEnterpriseServer
+ Description:    Red Hat Enterprise Linux Server release 6.3 (Santiago)
+ Release:        6.3
+ Codename:       Santiago
+ 
+ # uname -r
+ 2.6.32-279.el6.i686
+
+ 
+官方地址:http://www.samba.org/samba/
+官方文档:http://www.samba.org/samba/docs/
+下载地址:http://ftp.samba.org/pub/samba/
+安装指导:http://eugene.oregontechsupport.com/samba/
+
+
+第一步:下载文件
+# wget http://ftp.samba.org/pub/samba/samba-latest.tar.gz下载文件samba-latest.tar.gz
+# wget http://ftp.samba.org/pub/samba/samba-pubkey.asc下载samba-pubkey.asc
+# wget http://ftp.samba.org/pub/samba/samba-latest.tar.asc下载samba-latest.tar.asc
+# ls
+ cifs-1.50.tar.gz  samba-latest.tar.asc  samba-latest.tar.gz  samba-pubkey.asc
+
+ 
+第二步:测试文件
+#gpg --import samba-pubkey.asc
+#gunzip samba-latest.tar.gz
+#gpg --verify samba-latest.tar.asc
+
+
+第三步:安装文件
+#yum install python-devel
+# tar -xf samba-latest.tar
+#./configue
+#make && make install
+  
+
+第四步:设置环境变量
+将samba安装目录下的bin和sbin目录添加到.bash_profile的PATH中
+#vim .bash_profile
+#source .bash_profile
+# smbstatus
+ Samba version 4.0.5
+ PID     Username      Group         Machine
+ -------------------------------------------------------------------
+ Service      pid     machine       Connected at
+ -------------------------------------------------------
+ /usr/local/samba/var/lock/locking.tdb not initialised
+ This is normal if an SMB client has never connected to your server.
+
+ 
+第五步:创建samba账户
+#groupadd 组名
+#useradd -d /home/smb账户 -g 组名 -s /bin/false -m smb账户
+#smbpasswd -a smb账户
+ 
+第六步:创建共享目录
+#mkdir -p 共享目录
+#chown -R smb账户:组名 共享目录
+ 
+
+第七步:拷贝安装目录下examples下的smb.conf.default到/usr/local/samba/etc/smb.conf,添加一个共享
+[访问的时候显示的目录名]
+    comment = 注释
+    path = 共享目录
+    public = no
+    guest ok = no
+    browseable = yes
+    writeable = yes
+    valid users = smb账户
+
+
+第八步:启动服务
+#iptables -F
+#setenforce 0
+#smbd -D
+#nmbd -D
+
+
+第九步:访问共享
+Linux访问Windows:
+#mount -t cifs -o username=windows账户 windows共享 挂载点
+
+Widnows访问Linux:
+\\smba服务器地址
+
+windows下清空账户和密码
+net use * /delete /y   
+
+最后推荐一个远程Linux工具:PuTTy 
