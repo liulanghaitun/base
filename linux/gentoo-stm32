@@ -1,0 +1,46 @@
+ssdev -t s4 --gcc =5.4.0 -v arm-none-eabi
+
+gcc版本为当前系统安装的版本,通过gcc -v 可以获得
+
+编译完成后:
+arm-none-eabi-addr2line   arm-none-eabi-elfedit     arm-none-eabi-gcc-ranlib  arm-none-eabi-ld.gold     arm-none-eabi-size
+arm-none-eabi-ar          arm-none-eabi-emerge      arm-none-eabi-gcov        arm-none-eabi-nm          arm-none-eabi-strings
+arm-none-eabi-as          arm-none-eabi-fix-root    arm-none-eabi-gcov-5.4.0  arm-none-eabi-objcopy     arm-none-eabi-strip
+arm-none-eabi-c++filt     arm-none-eabi-gcc         arm-none-eabi-gcov-tool   arm-none-eabi-objdump
+arm-none-eabi-cpp         arm-none-eabi-gcc-5.4.0   arm-none-eabi-gprof       arm-none-eabi-pkg-config
+arm-none-eabi-cpp-5.4.0   arm-none-eabi-gcc-ar      arm-none-eabi-ld          arm-none-eabi-ranlib
+arm-none-eabi-dwp         arm-none-eabi-gcc-nm      arm-none-eabi-ld.bfd      arm-none-eabi-readelf
+
+使用:arm-none-eabi-gcc -v
+Using built-in specs.
+COLLECT_GCC=/usr/x86_64-pc-linux-gnu/arm-none-eabi/gcc-bin/5.4.0/arm-none-eabi-gcc
+COLLECT_LTO_WRAPPER=/usr/libexec/gcc/arm-none-eabi/5.4.0/lto-wrapper
+Target: arm-none-eabi
+Configured with: /var/tmp/portage/cross-arm-none-eabi/gcc-5.4.0/work/gcc-5.4.0/configure --host=x86_64-pc-linux-gnu --target=arm-none-eabi --build=x86_64-pc-linux-gnu --prefix=/usr --bindir=/usr/x86_64-pc-linux-gnu/arm-none-eabi/gcc-bin/5.4.0 --includedir=/usr/lib/gcc/arm-none-eabi/5.4.0/include --datadir=/usr/share/gcc-data/arm-none-eabi/5.4.0 --mandir=/usr/share/gcc-data/arm-none-eabi/5.4.0/man --infodir=/usr/share/gcc-data/arm-none-eabi/5.4.0/info --with-gxx-include-dir=/usr/lib/gcc/arm-none-eabi/5.4.0/include/g++-v5 --with-python-dir=/share/gcc-data/arm-none-eabi/5.4.0/python --enable-languages=c --enable-obsolete --enable-secureplt --disable-werror --with-system-zlib --enable-nls --without-included-gettext --enable-checking=release --with-bugurl=https://bugs.gentoo.org/ --with-pkgversion='Gentoo 5.4.0 p1.0, pie-0.6.5' --enable-poison-system-directories --disable-shared --disable-libatomic --disable-threads --without-headers --disable-bootstrap --with-newlib --enable-multilib --disable-altivec --disable-fixed-point --disable-libgcj --disable-libgomp --disable-libmudflap --disable-libssp --disable-libcilkrts --disable-libmpx --enable-vtable-verify --enable-libvtv --disable-libquadmath --enable-lto --without-isl --disable-libsanitizer
+Thread model: single
+gcc version 5.4.0 (Gentoo 5.4.0 p1.0, pie-0.6.5)
+
+编辑代码:hello.c
+#include <stdio.h>                                                                                                      
+int main(void)
+{
+    printf("hello world!\r\n");
+    return 0;
+}
+
+编译代码:
+arm-none-eabi-gcc --specs=rdimon.specs   -Wl,--start-group -lgcc -lc -lm -lrdimon -Wl,--end-group -o hello hello.c
+
+查看结果: file hello
+hello: ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), statically linked, not stripped, with debug_info
+
+安装模拟环境:
+QEMU_SOFTMMU_TARGETS="x86_64 arm" QEMU_USER_TARGETS="x86_64 arm" emerge app-emulation/qemu
+生成qemu-arm
+
+执行编译结果:
+qemu-arm hello
+
+输出结果:
+hello world!
+
