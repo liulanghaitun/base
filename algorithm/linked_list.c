@@ -78,7 +78,7 @@ list_node* del_list_node(list_node** current,int position)
         {
             list_node* message = (*current)->next;
             free(*current);
-            (*current)->next = NULL;
+            *current = NULL;
             return message;
         }else{
              (*current)->next = del_list_node(&(*current)->next,--position);
