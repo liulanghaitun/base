@@ -143,3 +143,15 @@
 	  [(null? ls) (co '())]
 	  [(eq? element (car ls)) (replaceAll&co element value (cdr ls) (lambda (x) (co (cons value x))))]
 	  [else (replaceAll&co element value (cdr ls) (lambda (x) (co (cons (car ls) x))))])))
+;;caculate list length
+(define list-length
+  (lambda (ls)
+	(cond
+	  [(null? ls) 0]
+	  [else (+ 1 (list-length (cdr ls)))])))
+;;caculate list length=====>cps
+(define list-length&co
+  (lambda (ls co)
+	(cond
+	  [(null? ls) (co 0)]
+	  [else (list-length&co (cdr ls) (lambda (x) (co (+ 1 x))))])))
