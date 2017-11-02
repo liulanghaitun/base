@@ -155,3 +155,19 @@
 	(cond
 	  [(null? ls) (co 0)]
 	  [else (list-length&co (cdr ls) (lambda (x) (co (+ 1 x))))])))
+;;memeber?===>cps
+(define member?&co
+  (lambda (a ls col)
+	(cond
+	  [(null? ls) (col '() '())]
+	  [(eq? a (car ls)) (member?&co a (cdr ls) (lambda (in out) (col (cons (car ls) in) out)))]
+	  [else (member?&co a (cdr ls) (lambda (in out) (col in (cons (car ls) out))))])))
+(define col
+  (lambda (in out)
+	(display in)
+	(display ":")
+	(display out)
+	(newline)
+	(not (null? in))))
+
+(member?&co '2 '(1 2 4 7 2 9) col)
